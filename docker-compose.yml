@@ -1,0 +1,50 @@
+version: '2.3'
+
+services:
+
+  neural_worker:
+    restart: always
+    container_name: neural_worker
+    mem_limit: 4G
+
+    build:
+      context: ./neural_worker
+      dockerfile: Dockerfile
+    image: neural_worker:latest
+    command: bash -c "uvicorn main:app --host 0.0.0.0 --port ${WORKER_PORT}"
+
+    environment:
+      - BASE_GPT_URL=${BASE_GPT_URL}
+      - GPT_TOKEN=${GPT_TOKEN}
+
+    volumes:
+      - ./neural_worker:/neural_worker
+
+    ports:
+      - ${WORKER_PORT}:${WORKER_PORT}
+
+  embedder:
+    restart: always
+    container_name: embedder
+    mem_limit: 4G
+
+    build:
+      context: ./embedder
+      dockerfile: Dockerfile
+    image: embedder:latest
+    command: bash -c "uvicorn main:app --host 0.0.0.0 --port ${EMBEDDER_PORT}"
+
+    # environment:
+    #   - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES_EMB}
+    #   - TRANSFORMERS_CACHE=${TRANSFORMERS_CACHE_EMB}
+    
+    volumes:
+      - ./embedder:/embedder
+
+      # TEST ONLY
+      # - /home/shace_linux/.cache/huggingface/hub:/cache/
+    
+    # runtime: nvidia
+
+    ports:
+      - ${EMBEDDER_PORT}:${EMBEDDER_PORT}

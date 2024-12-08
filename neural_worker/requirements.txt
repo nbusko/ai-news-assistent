@@ -1,0 +1,8 @@
+pydantic==2.9.0
+numpy==2.1.1
+requests==2.32.3
+uvicorn==0.30.6
+fastapi==0.114.0
+timm==1.0.9
+protobuf==5.28.0
+openai==1.57.0
