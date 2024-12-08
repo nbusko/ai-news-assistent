@@ -1,7 +1,6 @@
 version: '2.3'
 
 services:
-
   neural_worker:
     restart: always
     container_name: neural_worker
@@ -34,17 +33,8 @@ services:
     image: embedder:latest
     command: bash -c "uvicorn main:app --host 0.0.0.0 --port ${EMBEDDER_PORT}"
 
-    # environment:
-    #   - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES_EMB}
-    #   - TRANSFORMERS_CACHE=${TRANSFORMERS_CACHE_EMB}
-    
     volumes:
       - ./embedder:/embedder
-
-      # TEST ONLY
-      # - /home/shace_linux/.cache/huggingface/hub:/cache/
-    
-    # runtime: nvidia
 
     ports:
       - ${EMBEDDER_PORT}:${EMBEDDER_PORT}
