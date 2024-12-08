@@ -11,6 +11,8 @@ Add a `.env` file to the root directory of the project with the following conten
 ```bash
 # Embedder settings
 EMBEDDER_PORT=
+SPECIFIC_MODEL="" #will be chosen default model
+CUDA_VISIBLE_DEVICES_EMB=
 
 # Neural GPT worker settings
 WORKER_PORT=

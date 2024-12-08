@@ -33,6 +33,10 @@ services:
     image: embedder:latest
     command: bash -c "uvicorn main:app --host 0.0.0.0 --port ${EMBEDDER_PORT}"
 
+    environment:
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_EMB}
+      - SPECIFIC_MODEL=${SPECIFIC_MODEL}
+
     volumes:
       - ./embedder:/embedder
 
