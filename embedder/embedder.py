@@ -5,6 +5,7 @@ from sentence_transformers import SentenceTransformer
 
 from config import DEFAULT_MODEL
 
+
 class Embedder:
     def __init__(self):
         """
@@ -12,8 +13,13 @@ class Embedder:
         instance of the SentenceTransformer model and setting the device.
         """
         self.model = SentenceTransformer(
-            os.getenv("SPECIFIC_MODEL") if os.getenv("SPECIFIC_MODEL") else DEFAULT_MODEL,
+            (
+                os.getenv("SPECIFIC_MODEL")
+                if os.getenv("SPECIFIC_MODEL")
+                else DEFAULT_MODEL
+            ),
             device="cuda" if torch.cuda.is_available() else "cpu",
+            cache_folder=os.getenv("TRANSFORMERS_CACHE"),
         )
 
     def answer(self, query):
@@ -30,7 +36,9 @@ class Embedder:
         embedding as a list of floating-point numbers.
         """
 
-        emb = self.model.encode(query, convert_to_tensor=True, normalize_embeddings=True)
+        emb = self.model.encode(
+            query, convert_to_tensor=True, normalize_embeddings=True
+        )
 
         result = {
             "query_embedding": [float(el) for el in torch.squeeze(emb)],

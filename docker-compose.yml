@@ -1,6 +1,34 @@
 version: '2.3'
 
 services:
+  rag_engine:
+    restart: always
+    container_name: rag_engine
+    mem_limit: 2600m
+
+    build:
+      context: ./rag_engine
+      dockerfile: Dockerfile
+
+    image: rag_engine:latest
+
+    environment:
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      EMBEDDER_URL: ${EMBEDDER_URL}
+    volumes:
+      - ./rag_engine:/rag_engine
+    command: bash -c "uvicorn src.main:app --host 0.0.0.0 --port ${RAG_ENGINE_PORT}"
+    ports:
+      - ${RAG_ENGINE_PORT}:${RAG_ENGINE_PORT}
+    depends_on:
+      - mysql
+      - embedder
+      - neural_worker
+
   neural_worker:
     restart: always
     container_name: neural_worker
@@ -34,11 +62,32 @@ services:
     command: bash -c "uvicorn main:app --host 0.0.0.0 --port ${EMBEDDER_PORT}"
 
     environment:
-      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_EMB}
+      - NVIDIA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_EMB}
       - SPECIFIC_MODEL=${SPECIFIC_MODEL}
+      - TRANSFORMERS_CACHE=${TRANSFORMERS_CACHE}
 
     volumes:
       - ./embedder:/embedder
 
+      # TEST ONLY
+      - /home/orange_lime/.cache/huggingface/hub:/cache/
+
     ports:
       - ${EMBEDDER_PORT}:${EMBEDDER_PORT}
+
+  mysql:
+    restart: always
+    container_name: mysql
+    mem_limit: 500m
+    image: mysql:5.6  # Choose your desired MySQL version
+
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      # MYSQL_USER: ${DB_USER}
+      # MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD} # Required for MySQL
+    volumes:
+      - ./mysqldata:/var/lib/mysql
+      - ./mysql_conf/my.cnf:/etc/mysql/my.cnf
+    ports:
+      - ${DB_PORT}:${DB_PORT}
