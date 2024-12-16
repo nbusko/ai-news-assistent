@@ -1,4 +1,4 @@
-FROM python:3.10
+FROM nvidia/cuda:12.5.1-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
@@ -33,3 +33,4 @@ WORKDIR /embedder
 
 COPY requirements.txt /embedder/
 RUN pip install -r requirements.txt --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cu121
+RUN pip install datasets einops
