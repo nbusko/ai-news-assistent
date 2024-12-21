@@ -1,0 +1,2 @@
+telethon
+aiohttp==3.9.0
