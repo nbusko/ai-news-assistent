@@ -1,33 +1,64 @@
-version: '2.3'
+# version: '2.3'
 
 services:
-  rag_engine:
+  db_service:
     restart: always
-    container_name: rag_engine
-    mem_limit: 2600m
-
+    container_name: db_service
+    mem_limit: 4G
     build:
-      context: ./rag_engine
+      context: ./db_service
       dockerfile: Dockerfile
+    # networks:
+    #   - mynetwork
+    image: db_service:latest
+    command: bash -c "sleep 10 && uvicorn main:app --host 0.0.0.0 --port ${DB_SERVICE_PORT}"
 
-    image: rag_engine:latest
-
-    environment:
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      EMBEDDER_URL: ${EMBEDDER_URL}
-    volumes:
-      - ./rag_engine:/rag_engine
-    command: bash -c "uvicorn src.main:app --host 0.0.0.0 --port ${RAG_ENGINE_PORT}"
     ports:
-      - ${RAG_ENGINE_PORT}:${RAG_ENGINE_PORT}
+      - "${DB_SERVICE_PORT}:${DB_SERVICE_PORT}"
+    environment:
+      - DB_SERVICE_PORT=${DB_SERVICE_PORT}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
     depends_on:
       - mysql
-      - embedder
-      - neural_worker
+    volumes:
+      - ./db_service:/db_service
+    
+
+  mysql:
+    restart: always
+    container_name: mysql
+    mem_limit: 500m
+    image: mysql:5.6
+    # networks:
+    #   - mynetwork
+    environment:
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - ./mysqldata:/var/lib/mysql
+      - ./mysql_conf/my.cnf:/etc/mysql/my.cnf
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+
+# networks:
+#   mynetwork:
+#     driver: bridge
+   
+  # db:
+  #   image: mysql:8.0
+  #   environment:
+  #     MYSQL_DATABASE: ${DB_NAME}
+  #     MYSQL_USER: ${DB_USER}
+  #     MYSQL_PASSWORD: ${DB_ROOT_PASSWORD}
+  #     MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+  #   ports:
+  #     - "${DB_PORT}:3306"
+  #   volumes:
+  #     - db_data:/var/lib/mysql
 
   neural_worker:
     restart: always
@@ -62,32 +93,55 @@ services:
     command: bash -c "uvicorn main:app --host 0.0.0.0 --port ${EMBEDDER_PORT}"
 
     environment:
-      - NVIDIA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_EMB}
+      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_EMB}
       - SPECIFIC_MODEL=${SPECIFIC_MODEL}
-      - TRANSFORMERS_CACHE=${TRANSFORMERS_CACHE}
+      # - TRANSFORMERS_CACHE=${TRANSFORMERS_CACHE}
 
     volumes:
       - ./embedder:/embedder
 
-      # TEST ONLY
-      - /home/orange_lime/.cache/huggingface/hub:/cache/
-
     ports:
       - ${EMBEDDER_PORT}:${EMBEDDER_PORT}
 
-  mysql:
-    restart: always
-    container_name: mysql
-    mem_limit: 500m
-    image: mysql:5.6  # Choose your desired MySQL version
 
-    environment:
-      MYSQL_DATABASE: ${DB_NAME}
-      # MYSQL_USER: ${DB_USER}
-      # MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD} # Required for MySQL
-    volumes:
-      - ./mysqldata:/var/lib/mysql
-      - ./mysql_conf/my.cnf:/etc/mysql/my.cnf
-    ports:
-      - ${DB_PORT}:${DB_PORT}
+######## rag_engine:
+########   restart: always
+########   container_name: rag_engine
+########   mem_limit: 2600m
+########   build:
+########     context: ./rag_engine
+########     dockerfile: Dockerfile
+########   image: rag_engine:latest
+########   environment:
+########     DB_NAME: ${DB_NAME}
+########     DB_USER: ${DB_USER}
+########     DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+########     DB_HOST: ${DB_HOST}
+########     DB_PORT: ${DB_PORT}
+########     EMBEDDER_URL: ${EMBEDDER_URL}
+########   volumes:
+########     - ./rag_engine:/rag_engine
+########   command: bash -c "uvicorn src.main:app --host 0.0.0.0 --port ${RAG_ENGINE_PORT}"
+########   ports:
+########     - ${RAG_ENGINE_PORT}:${RAG_ENGINE_PORT}
+########   depends_on:
+########     - mysql
+########     - embedder
+########     - neural_worker
+
+########  mysql:
+########    restart: always
+########    container_name: mysql
+########    mem_limit: 500m
+########    image: mysql:5.6
+########
+########    environment:
+########      MYSQL_DATABASE: ${DB_NAME}
+########      # MYSQL_USER: ${DB_USER}
+########      # MYSQL_PASSWORD: ${DB_PASSWORD}
+########      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+########    volumes:
+########      - ./mysqldata:/var/lib/mysql
+########      - ./mysql_conf/my.cnf:/etc/mysql/my.cnf
+########    ports:
+########      - ${DB_PORT}:${DB_PORT}

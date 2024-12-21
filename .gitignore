@@ -37,3 +37,5 @@ build/
 
 # Windows
 Thumbs.db
+
+mysqldata/

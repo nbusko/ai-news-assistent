@@ -29,8 +29,7 @@ RUN apt update && \
     rm -rf /var/lib/apt/lists/* && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 
-WORKDIR /embedder
+WORKDIR /db_service
 
-COPY requirements.txt /embedder/
-RUN pip install -r requirements.txt --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cu121
-RUN pip install datasets einops
+COPY requirements.txt /db_service/
+RUN pip install -r requirements.txt
