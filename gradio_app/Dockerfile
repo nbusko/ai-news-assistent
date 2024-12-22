@@ -29,7 +29,7 @@ RUN apt update && \
     rm -rf /var/lib/apt/lists/* && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 
-WORKDIR /gradio
-COPY requirements.txt /gradio/
+WORKDIR /gradio_app
+COPY requirements.txt /gradio_app/
 
 RUN pip install -r requirements.txt --no-cache-dir

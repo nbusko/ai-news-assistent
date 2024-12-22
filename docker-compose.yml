@@ -1,4 +1,4 @@
-# version: '2.3'
+version: '3.9'
 
 services:
   db_service:
@@ -8,11 +8,8 @@ services:
     build:
       context: ./db_service
       dockerfile: Dockerfile
-    # networks:
-    #   - mynetwork
     image: db_service:latest
-    command: bash -c "sleep 10 && uvicorn main:app --host 0.0.0.0 --port ${DB_SERVICE_PORT}"
-
+    command: bash -c "sleep 8 && uvicorn main:app --host 0.0.0.0 --port ${DB_SERVICE_PORT}"
     ports:
       - "${DB_SERVICE_PORT}:${DB_SERVICE_PORT}"
     environment:
@@ -21,20 +18,18 @@ services:
       - DB_PORT=${DB_PORT}
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
-      - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}    
+      - CSV_PATH=${CSV_PATH}
     depends_on:
       - mysql
     volumes:
       - ./db_service:/db_service
     
-
   mysql:
     restart: always
     container_name: mysql
     mem_limit: 500m
     image: mysql:5.6
-    # networks:
-    #   - mynetwork
     environment:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
@@ -44,40 +39,20 @@ services:
     ports:
       - ${DB_PORT}:${DB_PORT}
 
-# networks:
-#   mynetwork:
-#     driver: bridge
-   
-  # db:
-  #   image: mysql:8.0
-  #   environment:
-  #     MYSQL_DATABASE: ${DB_NAME}
-  #     MYSQL_USER: ${DB_USER}
-  #     MYSQL_PASSWORD: ${DB_ROOT_PASSWORD}
-  #     MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-  #   ports:
-  #     - "${DB_PORT}:3306"
-  #   volumes:
-  #     - db_data:/var/lib/mysql
-
   neural_worker:
     restart: always
     container_name: neural_worker
     mem_limit: 4G
-
     build:
       context: ./neural_worker
       dockerfile: Dockerfile
     image: neural_worker:latest
     command: bash -c "uvicorn main:app --host 0.0.0.0 --port ${WORKER_PORT}"
-
     environment:
       - BASE_GPT_URL=${BASE_GPT_URL}
       - GPT_TOKEN=${GPT_TOKEN}
-
     volumes:
       - ./neural_worker:/neural_worker
-
     ports:
       - ${WORKER_PORT}:${WORKER_PORT}
 
@@ -85,63 +60,92 @@ services:
     restart: always
     container_name: embedder
     mem_limit: 4G
-
     build:
       context: ./embedder
       dockerfile: Dockerfile
     image: embedder:latest
     command: bash -c "uvicorn main:app --host 0.0.0.0 --port ${EMBEDDER_PORT}"
-
     environment:
       - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES_EMB}
       - SPECIFIC_MODEL=${SPECIFIC_MODEL}
-      # - TRANSFORMERS_CACHE=${TRANSFORMERS_CACHE}
-
     volumes:
       - ./embedder:/embedder
-
     ports:
       - ${EMBEDDER_PORT}:${EMBEDDER_PORT}
 
+  rag_manager:
+    restart: always
+    container_name: rag_manager
+    mem_limit: 4G
+    build:
+      context: ./rag_manager
+      dockerfile: Dockerfile
+    image: rag_manager:latest
+    environment:
+      NEURAL_URL: http://neural_worker:${WORKER_PORT}
+      EMBEDDER_URL: http://embedder:${EMBEDDER_PORT}
+      DB_SERVICE_URL: http://db_service:${DB_SERVICE_PORT}
+    volumes:
+      - ./rag_manager:/rag_manager
+    command: bash -c "uvicorn main:app --host 0.0.0.0 --port ${RAG_MANAGER_PORT}"
+    ports:
+      - ${RAG_MANAGER_PORT}:${RAG_MANAGER_PORT}
+    depends_on:
+      - db_service
+      - embedder
+      - neural_worker
 
-######## rag_engine:
-########   restart: always
-########   container_name: rag_engine
-########   mem_limit: 2600m
-########   build:
-########     context: ./rag_engine
-########     dockerfile: Dockerfile
-########   image: rag_engine:latest
-########   environment:
-########     DB_NAME: ${DB_NAME}
-########     DB_USER: ${DB_USER}
-########     DB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-########     DB_HOST: ${DB_HOST}
-########     DB_PORT: ${DB_PORT}
-########     EMBEDDER_URL: ${EMBEDDER_URL}
-########   volumes:
-########     - ./rag_engine:/rag_engine
-########   command: bash -c "uvicorn src.main:app --host 0.0.0.0 --port ${RAG_ENGINE_PORT}"
-########   ports:
-########     - ${RAG_ENGINE_PORT}:${RAG_ENGINE_PORT}
-########   depends_on:
-########     - mysql
-########     - embedder
-########     - neural_worker
+  gradio_app:
+    restart: always
+    container_name: gradio_app
+    mem_limit: 4G
+    build:
+      context: ./gradio_app
+      dockerfile: Dockerfile
+    environment:
+      RAG_MANAGER_URL: http://rag_manager:${RAG_MANAGER_PORT}
+      GRADIO_PORT: ${GRADIO_PORT}
+    volumes:
+      - ./gradio_app:/gradio_app
+    command: bash -c "python3 page.py"
+    ports:
+      - ${GRADIO_PORT}:${GRADIO_PORT}
+    depends_on:
+      - rag_manager
+    
+  telegram_bot:
+    restart: always
+    container_name: telegram_bot
+    mem_limit: 4G
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    environment:
+      RAG_MANAGER_URL: http://rag_manager:${RAG_MANAGER_PORT}
+      BOT_API_TOKEN: ${BOT_API_TOKEN}
+    volumes:
+      - ./bot:/bot
+    command: bash -c "python3 bot.py"
+    depends_on:
+      - rag_manager
 
-########  mysql:
-########    restart: always
-########    container_name: mysql
-########    mem_limit: 500m
-########    image: mysql:5.6
-########
-########    environment:
-########      MYSQL_DATABASE: ${DB_NAME}
-########      # MYSQL_USER: ${DB_USER}
-########      # MYSQL_PASSWORD: ${DB_PASSWORD}
-########      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-########    volumes:
-########      - ./mysqldata:/var/lib/mysql
-########      - ./mysql_conf/my.cnf:/etc/mysql/my.cnf
-########    ports:
-########      - ${DB_PORT}:${DB_PORT}
+  news_parser:
+    # restart: always
+    container_name: news_parser
+    mem_limit: 4G
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    build:
+      context: ./parser
+      dockerfile: Dockerfile
+    environment:
+      USE_PARSER: ${USE_PARSER}
+      PHONE: ${PHONE}
+      API_ID: ${API_ID}
+      API_HASH: ${API_HASH}
+      DB_SERVICE_URL: http://db_service:${DB_SERVICE_PORT}
+    volumes:
+      - ./parser:/parser
+    command: bash -c "sleep 12 && python3 parser.py"
+    depends_on:
+      - db_service

@@ -28,8 +28,8 @@ class Embedder:
         query using the SentenceTransformer model.
 
         Args:
-        - query: The input query for which the
-        embedding needs to be generated.
+        - query list: The input query list for which the
+        embeddings needs to be generated.
 
         Returns:
         - result: A dictionary containing the query
@@ -37,16 +37,17 @@ class Embedder:
         """
 
         emb = self.model.encode(
-            query, convert_to_tensor=True, normalize_embeddings=True
+            query, convert_to_tensor=True, normalize_embeddings=True, batch_size=16
         )
 
-        result = {
-            "query_embedding": [float(el) for el in torch.squeeze(emb)],
-        }
+        results = [
+            {"query_embedding": [float(el) for el in torch.squeeze(embedding)]}
+            for embedding in emb
+        ]
 
         torch.cuda.empty_cache()
 
-        return result
+        return results
 
 
 if __name__ == "__main__":

@@ -39,3 +39,9 @@ build/
 Thumbs.db
 
 mysqldata/
+
+gradio_app/.gradio/
+
+parser/*.session*
+
+db_service/news_data/*

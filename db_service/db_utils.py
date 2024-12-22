@@ -1,86 +1,70 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import insert, select
+from sqlalchemy import insert, select, func
+
+from datetime import datetime, timedelta
 from db_models import Message
+import csv
 
 async def insert_message(data, session: AsyncSession):
-    stmt = insert(Message).values(data)
+
+    query = select(Message).where(Message.chat_id == data.get('chat_id'), 
+                                  Message.message_id == data.get('message_id')
+    ) 
+    result = await session.execute(query)
+    existing_message = result.scalars().all()
+    
+    if existing_message:    
+        return -1
+    else:
+        stmt = insert(Message).values(data)
+        result = await session.execute(stmt)
+        await session.commit()
+        return result.inserted_primary_key[0]
+
+async def get_messages(session: AsyncSession):
+    stmt = select(Message).where(Message.message_date >= (datetime.now().date() - timedelta(days=7)))
     result = await session.execute(stmt)
-    await session.commit()
-    return result.inserted_primary_key[0]
+    return result.scalars().all()
 
 async def get_messages_by_date(date, session: AsyncSession):
-    stmt = select(Message).where(Message.message_date == date)
+    stmt = select(Message).where(Message.message_date >= date)
     result = await session.execute(stmt)
     return result.scalars().all()
 
 async def get_messages_by_theme(theme, session: AsyncSession):
-    stmt = select(Message).where(Message.theme == theme)
+    stmt = select(Message).where(
+        Message.theme == theme, 
+        Message.message_date >= (datetime.now().date() - timedelta(days=3))
+    )
     result = await session.execute(stmt)
     return result.scalars().all()
 
 async def get_messages_by_theme_and_date(theme, date, session: AsyncSession):
     stmt = select(Message).where(
         Message.theme == theme,
-        Message.message_date == date
+        Message.message_date >= date
     )
     result = await session.execute(stmt)
     return result.scalars().all()
 
 
+async def insert_data_from_csv_if_empty(csv_file_path, session: AsyncSession):
 
-# import os
-# import json
-# import asyncio
+    result = await session.execute(select(func.count(Message.id)))
+    message_count = result.scalar()
+    if message_count  < 20:
+        with open(csv_file_path, newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                message_date = datetime.strptime(row['message_date'], '%Y-%m-%d %H:%M:%S%z').date()
+                
+                stmt = insert(Message).values(
+                    chat_id=(row['chat_id']),
+                    message_id=(row['message_id']),
+                    content=row['content'],
+                    message_date=message_date,
+                    theme=row['theme']
+                )
+                await session.execute(stmt)
 
-# from sqlalchemy.ext.asyncio import AsyncSession
-# from fastapi import HTTPException
-# from fastapi import status
-# # import faiss
-# import numpy as np
-# import pandas as pd
-# import sqlalchemy as sa
-# import aiohttp
-
-# from db_models import IndexMetainfo, Texts
-
-# async def insert_data_to_bd(cols, session: AsyncSession):
-#     """
-#     Insert data into a MySQL database
-#     table using SQLAlchemy and return the primary key of the inserted row.
-#     """
-#     q = sa.insert(IndexMetainfo).values(cols)
-#     q = await session.execute(q)
-#     # await session.commit()
-
-#     p_id = q.inserted_primary_key[0]
-
-#     return p_id
-
-
-# async def insert_text(idx_id, p_id, session: AsyncSession):
-#     q = sa.insert(Texts).values(index_id=idx_id, metainf_id=p_id)
-#     await session.execute(q)
-
-
-# async def get_metainf_by_text(faiss_id, session: AsyncSession):
-#     """
-#     Retrieves metadata information from a
-#     database table based on a given ID.
-#     """
-#     q = (
-#         sa.select()
-#         .with_only_columns(Texts.metainf_id)
-#         .where(Texts.index_id == faiss_id)
-#     )
-#     q = await session.execute(q)
-#     res = q.fetchone()
-#     if not res:
-#         return
-    
-#     p_id = res.metainf_id
-
-#     q = sa.select(IndexMetainfo).where(IndexMetainfo.index_metainf_id == p_id)
-#     q = await session.execute(q)
-#     res = q.fetchone()[0]  # why [0]?
-
-#     return {c.name: str(getattr(res, c.name)) for c in res.__table__.columns}
+        await session.commit()        

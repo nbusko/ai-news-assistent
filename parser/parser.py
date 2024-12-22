@@ -1,9 +1,12 @@
 from telethon.sync import TelegramClient
 from telethon import events
 from telethon.tl.functions.messages import GetHistoryRequest
+from datetime import datetime
 import json
 import os
 import aiohttp
+import asyncio
+import csv
 
 class NewsParser:
     def __init__(self, phone, api_id, api_hash, url):
@@ -13,25 +16,24 @@ class NewsParser:
     async def start(self):
         @self.client.on(events.NewMessage(chats=self.chats))
         async def handler(message):
-                message_data = {
-                    "model": "mp_messages.message",
-                    "fields": {
-                        "id": message.id,
-                        "chat_id": message.chat_id,
-                        "date": message.date,
-                        "message_text": message.message.text,
-                        "theme": self.get_theme_by_id(message.chat_id)
-                    }
+                url = f"{os.getenv('DB_SERVICE_URL')}/update"
+                headers = {
+                    'accept': 'application/json',
+                    'Content-Type': 'application/json'
                 }
-                json_data = json.dumps(message_data, ensure_ascii=False, default=str).replace('\\\\', '\\')
+                data = {
+                    "chat_id": str(message.chat_id),
+                    "message_id": str(message.id),
+                    "content": str(message.message.text),
+                    "message_date": str(datetime.strptime(str(message.date), '%Y-%m-%dT%H:%M:%S%z').date()),
+                    "theme": str(self.get_theme_by_id(message.chat_id))
+                }
 
                 async with aiohttp.ClientSession() as session:
-                    async with session.get(
-                            f"{self.url}/update?data={json_data}"
-                        ) as resp:
-                        result = await resp.json()
+                    async with session.post(url, headers=headers, json=data) as resp:
+                        response = await resp.json()
 
-        self.client.run_until_disconnected()
+        await self.client.run_until_disconnected()
 
     async def stop(self):
         await self.client.disconnect()
@@ -60,27 +62,31 @@ class NewsParser:
                     if not history.messages:
                         break
                     for msg in history.messages:
+                        
                         if msg.message:
-                            all_messages.append({
-                                "model": "mp_messages.message",
-                                "fields": {
-                                    "id": msg.id,
-                                    "chat_id": msg.chat_id,
-                                    "date": msg.date,
-                                    "message_text": msg.message,
+                            all_messages.append(
+                                {
+                                    "message_id": str(msg.id),
+                                    "chat_id": str(msg.chat_id),
+                                    "message_date": str(datetime.strptime(msg.date.isoformat(), '%Y-%m-%dT%H:%M:%S%z').date()),
+                                    "content": str(msg.message),
                                     "theme": self.get_theme_by_id(msg.chat_id)
                                 }
-                            })
+                            )
                     offset_id = history.messages[-1].id
-                    json_data = json.dumps(all_messages, ensure_ascii=False, default=str).replace('\\\\', '\\')
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(
-                            f"{self.url}/update?data={json_data}"
-                        ) as resp:
-                            result = await resp.json()
-                    has_old_news = False
+                    
+                    for msg in all_messages:
+                        url = f"{os.getenv('DB_SERVICE_URL')}/update"
+                        headers = {
+                            'accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                        async with aiohttp.ClientSession() as session:
+                            async with session.post(url, headers=headers, json=msg) as resp:
+                                response = await resp.json()
+
                     total_messages += len(history.messages)
-                    if total_messages >= total_count_limit or has_old_news == 1:
+                    if total_messages >= total_count_limit:
                         break
             except Exception as e:
                 print(f"Error processing chat {chat.id}: {e}")
@@ -88,19 +94,18 @@ class NewsParser:
 
     def get_theme_by_id(self, id):
         chat_ids = {
-            "спорт": -1001167948059,
+            "спорт": -1001289211298,
             "экономика": -1001565562058,
-            "технологии": -1001551519421,
-            "наука": -1001371219605,
+            "технологии": -1001760916140,
+            "наука": -1001223201453,
             "нейросети": -1001466120158
         }
         inv_map = {v: k for k, v in chat_ids.items()}
         return inv_map[id]
-        # for theme, chat_id in chat_ids.items():
-        #     if chat_id == id:
-        #         return theme
 
 if __name__ == "__main__":
-    if os.getenv("USE_PARSER") == 1:
-        parser = NewsParser(os.getenv("PHONE"), os.getenv("API_ID"), os.getenv("API_HASH"), os.getenv("DB_PORT"))
-        parser.start()
+    if os.getenv("USE_PARSER") == "1":
+        parser = NewsParser(os.getenv("PHONE"), os.getenv("API_ID"), os.getenv("API_HASH"), os.getenv("DB_SERVICE_URL"))
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(parser.parse())
+        loop.run_until_complete(parser.start())

@@ -5,7 +5,3 @@ python-multipart==0.0.6
 numpy==1.25.1
 faiss-cpu==1.7.4
 requests==2.28.1
-# psycopg2-binary==2.9.5
-# greenlet==3.0.3
-# pandas==2.2.2
-# openpyxl==3.1.5

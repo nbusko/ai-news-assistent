@@ -15,3 +15,4 @@ async def responce(data: WorkerRequest):
     return JSONResponse(
         status_code=status.HTTP_200_OK, content={"answer": worker.answer(data)}
     )
+
