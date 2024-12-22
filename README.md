@@ -6,7 +6,7 @@
 
 <img src="images/bot_logo.jpg" height=200 align = "center"/>
 
-<h3 align="center">AI News Delivery Bot</h3>
+<h3 align="center">AI News Bot</h3>
 
 </div>
 
