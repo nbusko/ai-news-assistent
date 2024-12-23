@@ -64,13 +64,13 @@ This modular approach ensures efficient and accurate news delivery, tailored to 
  - Retrieved docs vs input: 0,50
 
 ## [Telegram bot](https://t.me/AINewsSummarizerBot) example
-   ![alt text](image.png)
+   ![alt text](images/image.png)
 
 ## UI example
-   ![alt text](image-1.png)
+   ![alt text](images/image-1.png)
 
 ## API example
-   ![alt text](image-2.png)
+   ![alt text](images/image-2.png)
 
 ## Technology steck
 
@@ -160,7 +160,7 @@ Fill in the variables with the appropriate values.
 ### Step 3 (Optional): Start Telegram Bot
 
 1. **Create a Bot for Telegram using Botfather**
-![alt text](image-4.png)
+![alt text](images/image-4.png)
 2. **Add your bot token to .env**
    ```bash
    USE_BOT=1
@@ -172,7 +172,7 @@ Fill in the variables with the appropriate values.
 1. **Create a Telegram API**
    
    It is strongly recommended to use a virtual number, the telethon may cause you to log out of your account and temporarily lose it 
-   ![alt text](image-3.png)
+   ![alt text](images/image-3.png)
 
 2. **Add your api params to .env**
    ```bash
