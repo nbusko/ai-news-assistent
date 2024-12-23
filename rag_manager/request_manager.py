@@ -42,7 +42,6 @@ class RequestManager:
 
         try:
             answer = response["answer"].replace('```json\n', '').replace('\n```', '')
-            # answer =ast.literal_eval(text.replace("\'","\"\"\""))
             logger.info(f"GPT ANSWER: {answer}")
         except Exception as e:
             logger.error(f"Error parsing GPT answer: {e}")
@@ -70,6 +69,7 @@ class RequestManager:
         
         if date_theme_info["date"] == "no" and date_theme_info["theme"] == "no":
             route = "get"
+            params = None
         elif date_theme_info["date"] != "no" and date_theme_info["theme"] != "no":
             route = "get_by_theme_date"
             params = date_theme_info
@@ -91,7 +91,7 @@ class RequestManager:
                 ) as resp:
                     news = await resp.json()
                     logger.info(f"News fetched: {news}")
-                    return news["messages"]
+                    return list(set(news["messages"]))
             except Exception as e:
                 logger.error(f"Error fetching news from DB: {e}")
                 return []
@@ -99,14 +99,14 @@ class RequestManager:
     async def get_top_news(self, messages: list, request: str) -> list:
         logger.info(f"Getting top news for request: {request}")
         await self.text_searcher.add_texts(messages)
-        top_news = await self.text_searcher.search(request, 12)
+        top_news = await self.text_searcher.search(request, 18)
         logger.info(f"Top news found: {top_news}")
         return top_news
 
     async def perfom_map(self, messages: list) -> str:
         logger.info(f"Performing map operation with messages: {messages}")
         news_answer = await self.get_gpt_answer(messages)
-        news_answer = json.loads(news_answer)
+
         logger.info(f"Map operation result: {news_answer}")
         return news_answer
 
@@ -133,13 +133,13 @@ class RequestManager:
         ]
 
         map_response = await self.async_starmap(self.perfom_map, messages)
-        map_response = list(filter(lambda x: x is not None, map_response))
+        map_response = map_response
         if map_response:
             logger.info(f"Best news found: {map_response}")
             return map_response
         logger.warning("No best news found, returning original news list")
         return news
-    
+
     async def generate_final_answer(self, news: list, request: str) -> str:
         logger.info(f"Generating final answer for request: {request}")
         messages = [

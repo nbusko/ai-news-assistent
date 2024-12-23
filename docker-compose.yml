@@ -123,6 +123,7 @@ services:
     environment:
       RAG_MANAGER_URL: http://rag_manager:${RAG_MANAGER_PORT}
       BOT_API_TOKEN: ${BOT_API_TOKEN}
+      USE_BOT: ${USE_BOT}
     volumes:
       - ./bot:/bot
     command: bash -c "python3 bot.py"

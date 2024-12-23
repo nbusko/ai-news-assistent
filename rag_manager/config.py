@@ -1,4 +1,4 @@
-max_new_tokens = 2056
+max_new_tokens = 8000
 
 check_date_time_prompt = \
 """

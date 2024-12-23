@@ -57,6 +57,7 @@ class NewsBot:
         self.bot.polling(none_stop=True, interval=0)
 
 if __name__ == "__main__":
-    bot = NewsBot(os.getenv("BOT_API_TOKEN"), os.getenv("RAG_MANAGER_URL"))
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(bot.start())
+    if os.getenv("USE_BOT") == "1":
+        bot = NewsBot(os.getenv("BOT_API_TOKEN"), os.getenv("RAG_MANAGER_URL"))
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(bot.start())
