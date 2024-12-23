@@ -52,40 +52,42 @@ This project is designed to deliver news in a chat format based on data and them
 
 Add a `.env` file to the root directory of the project with the following content:
 
+#### Example .env
 ```bash
 # Embedder settings
-EMBEDDER_PORT=
+EMBEDDER_PORT=8040
 SPECIFIC_MODEL="" # will be chosen default model
 CUDA_VISIBLE_DEVICES_EMB=all
 
 #DB settings
-DB_SERVICE_PORT=
+DB_SERVICE_PORT=8020
 DB_HOST=mysql
 DB_PORT=3306
 DB_NAME=mydatabase
 DB_USER=root
 DB_ROOT_PASSWORD=123
-CSV_PATH="/db_service/news_data/news.csv" # could be downloaded from yandex disk
+CSV_PATH="/db_service/news_data/news.csv"
 
 # RAG settings
-RAG_MANAGER_PORT=
+RAG_MANAGER_PORT=8030
 
 # Neural GPT worker settings
-WORKER_PORT=
-GPT_TOKEN=""
-BASE_GPT_URL="https://*********/openai/v1" 
+WORKER_PORT=8050
+GPT_TOKEN="sk-"
+BASE_GPT_URL="https://api.proxyapi.ru/openai/v1" 
 
 #Bot settings
+USE_BOT=0
 BOT_API_TOKEN=""
 
 #Parser settings
-USE_PARSER=0 # 0 or 1
+USE_PARSER=0
 API_ID=
 API_HASH=''
-PHONE='+7**********'
+PHONE='+7'
 
 #Gradio settings
-GRADIO_PORT=
+GRADIO_PORT=8060
 ```
 
 Fill in the variables with the appropriate values.

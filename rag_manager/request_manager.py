@@ -42,7 +42,6 @@ class RequestManager:
 
         try:
             answer = response["answer"].replace('```json\n', '').replace('\n```', '')
-            # answer =ast.literal_eval(text.replace("\'","\"\"\""))
             logger.info(f"GPT ANSWER: {answer}")
         except Exception as e:
             logger.error(f"Error parsing GPT answer: {e}")
@@ -91,7 +90,7 @@ class RequestManager:
                 ) as resp:
                     news = await resp.json()
                     logger.info(f"News fetched: {news}")
-                    return news["messages"]
+                    return list(set(news["messages"]))
             except Exception as e:
                 logger.error(f"Error fetching news from DB: {e}")
                 return []
@@ -99,7 +98,7 @@ class RequestManager:
     async def get_top_news(self, messages: list, request: str) -> list:
         logger.info(f"Getting top news for request: {request}")
         await self.text_searcher.add_texts(messages)
-        top_news = await self.text_searcher.search(request, 12)
+        top_news = await self.text_searcher.search(request, 18)
         logger.info(f"Top news found: {top_news}")
         return top_news
 
@@ -139,7 +138,7 @@ class RequestManager:
             return map_response
         logger.warning("No best news found, returning original news list")
         return news
-    
+
     async def generate_final_answer(self, news: list, request: str) -> str:
         logger.info(f"Generating final answer for request: {request}")
         messages = [
