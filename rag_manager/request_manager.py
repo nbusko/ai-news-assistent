@@ -69,6 +69,7 @@ class RequestManager:
         
         if date_theme_info["date"] == "no" and date_theme_info["theme"] == "no":
             route = "get"
+            params = None
         elif date_theme_info["date"] != "no" and date_theme_info["theme"] != "no":
             route = "get_by_theme_date"
             params = date_theme_info
@@ -105,7 +106,7 @@ class RequestManager:
     async def perfom_map(self, messages: list) -> str:
         logger.info(f"Performing map operation with messages: {messages}")
         news_answer = await self.get_gpt_answer(messages)
-        news_answer = json.loads(news_answer)
+
         logger.info(f"Map operation result: {news_answer}")
         return news_answer
 
@@ -132,7 +133,7 @@ class RequestManager:
         ]
 
         map_response = await self.async_starmap(self.perfom_map, messages)
-        map_response = list(filter(lambda x: x is not None, map_response))
+        map_response = map_response
         if map_response:
             logger.info(f"Best news found: {map_response}")
             return map_response
