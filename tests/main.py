@@ -5,13 +5,13 @@ from dotenv import load_dotenv
 
 from bot_connection import predict_rag_answer, predict_rag_answer_with_context
 from evaluators import answer_evaluator, answer_hallucination_evaluator, answer_helpfulness_evaluator, docs_relevance_evaluator
-
+from dotenv import load_dotenv
 load_dotenv()
 
 client = Client()
-test_db = pd.read_csv("news_query.csv", nrows=10)
+test_db = pd.read_csv("/home/nbusko/itmo/ai-news-assistent/tests/news_query.csv", nrows=10)
 
-dataset_name = "Test RAG system"
+dataset_name = "Test RAG system 5"
 dataset = client.create_dataset(dataset_name=dataset_name)
 inputs, outputs = zip(
     *[
@@ -68,6 +68,6 @@ relevance_scores = [
 
 # Print all tests results:
 print(f"Average answer evaluating: {sum(answer_evaluator_scores) / len(answer_evaluator_scores)}")
-print(f"Average answer helpfulness: {sum(answer_helpfulness_results) / len(answer_helpfulness_results)}")
-print(f"Average answer hallucination: {sum(answer_hallucination_results) / len(answer_hallucination_results)}")
-print(f"Average docs relevance: {sum(docs_relevance_results) / len(docs_relevance_results)}")
+print(f"Average answer helpfulness: {sum(helpfulness_scores) / len(helpfulness_scores)}")
+print(f"Average answer hallucination: {sum(hallucination_scores) / len(hallucination_scores)}")
+print(f"Average docs relevance: {sum(relevance_scores) / len(relevance_scores)}")

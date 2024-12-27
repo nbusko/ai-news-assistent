@@ -190,18 +190,18 @@ class RequestManager:
         is_bad = await self.check_bad_request(request)
         if is_bad:
             logger.warning("Bad request detected")
-            return is_bad_answer_prompt
+            return {"faiss_news": [], "answer": is_bad_answer_prompt}
         
         data = await self.check_date_theme(request)
 
         news = await self.get_news_from_db(data)
         if not news:
             logger.warning("No news found")
-            return is_no_news_prompt
+            return {"faiss_news": [], "answer": is_no_news_prompt}
         
         faiss_news = await self.get_top_news(news, request)
         best_news = await self.get_best_news_from_list(faiss_news, request)
         final_result = await self.generate_final_answer(best_news, request)
         
         logger.info(f"Final result: {final_result}")
-        return {"map_reduced_news": best_news, "final_answer": final_result}
+        return {"faiss_news": faiss_news, "answer": final_result}

@@ -32,5 +32,5 @@ RUN apt update && \
 WORKDIR /embedder
 
 COPY requirements.txt /embedder/
-RUN pip install -r requirements.txt --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cu121
+RUN pip install -r requirements.txt --no-cache-dir
 RUN pip install datasets einops

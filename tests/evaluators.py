@@ -1,6 +1,8 @@
 import os
 from langchain import hub
 from langchain_openai import ChatOpenAI
+from dotenv import load_dotenv
+load_dotenv()
 
 # LLM grader
 llm = ChatOpenAI(
