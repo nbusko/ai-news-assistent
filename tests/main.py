@@ -1,13 +1,14 @@
 from langsmith import Client
 from langsmith.evaluation import evaluate
 import pandas as pd
+from dotenv import load_dotenv
 
-from bot_connection import predict_rag_answer
-from evaluators import answer_evaluator
+from bot_connection import predict_rag_answer, predict_rag_answer_with_context
+from evaluators import answer_evaluator, answer_hallucination_evaluator, answer_helpfulness_evaluator, docs_relevance_evaluator
 
+load_dotenv()
 
 client = Client()
-
 test_db = pd.read_csv("news_query.csv", nrows=10)
 
 dataset_name = "Test RAG system"
@@ -20,19 +21,53 @@ inputs, outputs = zip(
 )
 client.create_examples(inputs=inputs, outputs=outputs, dataset_id=dataset.id)
 
-experiment_results = evaluate(
+
+answer_evaluator_results = evaluate(
     predict_rag_answer,
     data=dataset_name,
     evaluators=[answer_evaluator],
     experiment_prefix="rag-answer-v-reference",
 )
-
-
-scores = [
-    result["evaluation_results"]["results"][0].score for result in experiment_results
+answer_evaluator_scores = [
+    result["evaluation_results"]["results"][0].score for result in answer_evaluator_results
 ]
 
-# Output numerical metrics
-average_score = sum(scores) / len(scores)
-print(f"Average Score: {average_score}")
-print(f"All Scores: {scores}")
+
+answer_helpfulness_results = evaluate(
+    predict_rag_answer,
+    data=dataset_name,
+    evaluators=[answer_helpfulness_evaluator],
+    experiment_prefix="rag-answer-helpfulness",
+)
+helpfulness_scores = [
+    result["evaluation_results"]["results"][0].score for result in answer_helpfulness_results
+]
+
+
+answer_hallucination_results = evaluate(
+    predict_rag_answer_with_context, # return question, answer, contexts(list)
+    data=dataset_name,
+    evaluators=[answer_hallucination_evaluator],
+    experiment_prefix="rag-answer-hallucination",
+)
+hallucination_scores = [
+    result["evaluation_results"]["results"][0].score for result in answer_hallucination_results
+]
+
+
+docs_relevance_results = evaluate(
+    predict_rag_answer_with_context,
+    data=dataset_name,
+    evaluators=[docs_relevance_evaluator],
+    experiment_prefix="rag-doc-relevance",
+)
+relevance_scores = [
+    result["evaluation_results"]["results"][0].score for result in docs_relevance_results
+]
+
+
+# Print all tests results:
+print(f"Average answer evaluating: {sum(answer_evaluator_scores) / len(answer_evaluator_scores)}")
+print(f"Average answer helpfulness: {sum(answer_helpfulness_results) / len(answer_helpfulness_results)}")
+print(f"Average answer hallucination: {sum(answer_hallucination_results) / len(answer_hallucination_results)}")
+print(f"Average docs relevance: {sum(docs_relevance_results) / len(docs_relevance_results)}")
