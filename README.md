@@ -58,10 +58,14 @@ This modular approach ensures efficient and accurate news delivery, tailored to 
 (.png and description will be provided later) 
 
 ## Metrics
- - Response vs reference answer: 0,68
- - Response vs input: 0,77
- - Response vs retrieved docs: 0,70
- - Retrieved docs vs input: 0,50
+
+| Metrics  | Result  | Description  |
+|---|---|---|
+| Response vs reference answer | 0,68 | This metrics shows similarity between LLM answer and target answer|
+| Response vs input | 0,77 | This metrics shows correspondence between LLM answer and user's query |
+| Response vs retrieved docs | 0,70 | This metrics shows correspondence between LLM answer and retrieved passages |
+| Retrieved docs vs input | 0,50 | This metrics shows correspondence between user's query and retrieved passages |
+
 
 ## [Telegram bot](https://t.me/AINewsSummarizerBot) example
    ![alt text](images/image.png)
